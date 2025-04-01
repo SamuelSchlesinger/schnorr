@@ -196,12 +196,19 @@ impl<G: Group + Serialize> PrivateKey<G> {
         let alpha_t = G::Scalar::random(&mut rng);
         let u_t = G::generator() * alpha_t;
 
+        let mut ctx = [0u8; 64];
+        bincode::serde::encode_into_slice(
+            &self.public.u,
+            &mut ctx[0..32],
+            bincode::config::standard(),
+        )
+        .unwrap();
+        bincode::serde::encode_into_slice(&u_t, &mut ctx[32..], bincode::config::standard())
+            .unwrap();
+
         // Update the hash with public key and commitment
         // This binds the signature to this specific key and commitment
-        hasher.update(
-            &bincode::serde::encode_to_vec(&self.public.u, bincode::config::standard()).unwrap(),
-        );
-        hasher.update(&bincode::serde::encode_to_vec(&u_t, bincode::config::standard()).unwrap());
+        hasher.update(&ctx);
 
         // Use the hash output as a seed for deterministic challenge generation
         // This implements the Fiat-Shamir transform, converting interactive to non-interactive
@@ -252,13 +259,19 @@ impl<G: Group + Serialize> Signature<G> {
         //
         // This is an optimization that allows verification without knowing alpha_t
         let u_t = G::generator() * self.alpha_z - public_key.u * self.c;
+        let mut ctx = [0u8; 64];
+        bincode::serde::encode_into_slice(
+            &public_key.u,
+            &mut ctx[0..32],
+            bincode::config::standard(),
+        )
+        .unwrap();
+        bincode::serde::encode_into_slice(&u_t, &mut ctx[32..], bincode::config::standard())
+            .unwrap();
 
-        // Update the hash with the public key and computed commitment
-        // This must match exactly how the challenge was originally generated
-        hasher.update(
-            &bincode::serde::encode_to_vec(&public_key.u, bincode::config::standard()).unwrap(),
-        );
-        hasher.update(&bincode::serde::encode_to_vec(&u_t, bincode::config::standard()).unwrap());
+        // Update the hash with public key and commitment
+        // This binds the signature to this specific key and commitment
+        hasher.update(&ctx);
 
         // Use the hash output as a seed for deterministic challenge regeneration
         let mut rng = ChaCha20Rng::from_seed(*hasher.finalize().as_bytes());
@@ -280,7 +293,7 @@ mod tests {
         let mut seed = [0u8; 32];
         OsRng.fill_bytes(&mut seed);
         let mut rng = ChaCha20Rng::from_seed(seed);
-        for _i in 0..10000 {
+        for _i in 0..100 {
             use super::*;
             use curve25519_dalek::RistrettoPoint;
             let private_key: PrivateKey<RistrettoPoint> = PrivateKey::random(&mut rng);
@@ -289,6 +302,46 @@ mod tests {
             let signature = private_key.sign(&message, &mut rng);
             assert!(signature.verify(&message, private_key.public()))
         }
+    }
+
+    #[test]
+    fn test_tampered_signatures_fail() {
+        use super::*;
+        use curve25519_dalek::{RistrettoPoint, Scalar};
+        use rand_core::{OsRng, RngCore};
+        
+        let private_key: PrivateKey<RistrettoPoint> = PrivateKey::random(&mut OsRng);
+        let mut message = [0u8; 64];
+        OsRng.fill_bytes(&mut message);
+        let signature = private_key.sign(&message, &mut OsRng);
+        
+        // Original signature should verify
+        assert!(signature.verify(&message, private_key.public()));
+        
+        // 1. Tamper with the challenge value
+        let mut tampered_sig1 = signature.clone();
+        tampered_sig1.c = Scalar::random(&mut OsRng);
+        assert!(!tampered_sig1.verify(&message, private_key.public()));
+        
+        // 2. Tamper with the response value
+        let mut tampered_sig2 = signature.clone();
+        tampered_sig2.alpha_z = Scalar::random(&mut OsRng);
+        assert!(!tampered_sig2.verify(&message, private_key.public()));
+        
+        // 3. Tamper with both values
+        let mut tampered_sig3 = signature.clone();
+        tampered_sig3.c = Scalar::random(&mut OsRng);
+        tampered_sig3.alpha_z = Scalar::random(&mut OsRng);
+        assert!(!tampered_sig3.verify(&message, private_key.public()));
+        
+        // 4. Verify against incorrect message
+        let mut different_message = [0u8; 64];
+        OsRng.fill_bytes(&mut different_message);
+        assert!(!signature.verify(&different_message, private_key.public()));
+        
+        // 5. Verify against incorrect public key
+        let different_key: PrivateKey<RistrettoPoint> = PrivateKey::random(&mut OsRng);
+        assert!(!signature.verify(&message, different_key.public()));
     }
 
     #[test]

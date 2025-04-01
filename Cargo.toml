@@ -3,6 +3,10 @@ name = "schnorr"
 version = "0.1.0"
 edition = "2024"
 
+[[bench]]
+name = "schnorr_benchmark"
+harness = false
+
 [dependencies]
 bincode = { version = "2.0.1", features = ["serde"] }
 blake3 = "1.8.0"
@@ -14,3 +18,4 @@ serde = { version = "1.0.219", features = ["derive"] }
 [dev-dependencies]
 rand_core = { version = "0.6", features = ["getrandom"] }
 curve25519-dalek = { version = "4.1.3", features = ["serde", "group"] }
+criterion = { version = "0.5", features = ["html_reports"] }

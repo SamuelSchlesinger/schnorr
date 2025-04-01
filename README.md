@@ -92,7 +92,7 @@ let message = b"Hello, world!";
 let signature = private_key.sign(message, &mut OsRng);
 
 // Verify the signature
-assert!(bool::from(signature.verify(message, public_key)));
+assert!(signature.verify(message, public_key));
 ```
 
 ## Security Considerations

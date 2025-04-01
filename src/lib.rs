@@ -33,7 +33,6 @@
  *
  * - The security of Schnorr signatures relies on the discrete logarithm problem in the selected group
  * - This implementation uses a deterministic challenge derivation using the Blake3 hash function
- * - Constant-time operations are used for signature verification to mitigate timing attacks
  *
  * ## References
  *

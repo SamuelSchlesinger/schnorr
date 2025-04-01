@@ -101,6 +101,4 @@ assert!(bool::from(signature.verify(message, public_key)));
 
 2. **Random Number Generation**: The implementation uses ChaCha20Rng for deterministic derivation of challenges, but requires a secure RNG for key generation and nonce selection.
 
-3. **Side-Channel Attacks**: Though the code uses constant-time equality checks, implementers should be aware of potential side-channel vulnerabilities depending on the chosen group implementation.
-
 **Reference:** Pornin, T. (2013). *Deterministic Usage of the Digital Signature Algorithm (DSA) and Elliptic Curve Digital Signature Algorithm (ECDSA)*. RFC 6979. [https://datatracker.ietf.org/doc/html/rfc6979](https://datatracker.ietf.org/doc/html/rfc6979)

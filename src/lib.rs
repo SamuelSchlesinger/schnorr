@@ -79,6 +79,7 @@ pub struct PrivateKey<G: Group> {
 /// - `alpha_z`: The response computed as alpha_t + x*c
 ///
 /// The type parameter G represents the elliptic curve group being used for signatures.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Signature<G: Group> {
     /// The challenge value derived from the hash of the message, public key, and commitment
     c: G::Scalar,

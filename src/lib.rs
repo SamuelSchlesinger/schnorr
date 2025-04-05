@@ -52,7 +52,7 @@ use serde::{Deserialize, Serialize};
 /// the group generator by the private scalar `x` (i.e., u = g^x).
 ///
 /// The type parameter G represents the elliptic curve group being used for signatures.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PublicKey<G: Group> {
     /// The public key group element, computed as u = g^x where g is the group generator
     /// and x is the private key scalar.
@@ -64,7 +64,7 @@ pub struct PublicKey<G: Group> {
 /// Contains the secret scalar `x` and the corresponding public key.
 ///
 /// The type parameter G represents the elliptic curve group being used for signatures.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PrivateKey<G: Group> {
     /// The secret scalar x, which must remain confidential
     x: G::Scalar,
@@ -79,7 +79,6 @@ pub struct PrivateKey<G: Group> {
 /// - `alpha_z`: The response computed as alpha_t + x*c
 ///
 /// The type parameter G represents the elliptic curve group being used for signatures.
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Signature<G: Group> {
     /// The challenge value derived from the hash of the message, public key, and commitment
     c: G::Scalar,
